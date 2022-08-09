@@ -1,0 +1,38 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greenart.movie_history.mapper.DataGeneratorMapper">
+    <insert id="insertAccountInfos">
+            INSERT INTO account_info
+            (ai_id, ai_pwd, ai_name, ai_nickname, ai_birth, ai_gen, ai_reg_dt)
+            VALUES
+        <foreach collection="datas" item="user" separator=",">
+            (#{user.ai_id}, #{user.ai_pwd}, #{user.ai_name}, #{user.ai_nickname}, #{user.ai_birth}, #{user.ai_gen}, #{user.ai_reg_dt})
+        </foreach>
+    </insert>
+    <select id="selectAccountSeqList" resultType="java.lang.Integer">
+        select ai_seq from account_info
+    </select>
+    <select id="selectMovieSeqList" resultType="java.lang.Integer">
+        select mi_seq from movie_info
+    </select>
+    <insert id="insertLookupHistoryDatas">
+            INSERT INTO movie_lookup_history
+            (mlh_ai_seq, mlh_mi_seq, mlh_lookup_time)
+            VALUES
+        <foreach collection="datas" item="history" separator=",">
+            (#{history.mlh_ai_seq}, #{history.mlh_mi_seq}, #{history.mlh_lookup_time})
+        </foreach>
+    </insert>
+    <select id="selectMovieNames" resultType="java.lang.String">
+        select mi_title from movie_info
+    </select>
+    
+    <insert id="insertSearchHistoryDatas">
+        INSERT INTO movie_search_history(msh_ai_seq,msh_keyword,msh_search_time)
+        VALUES
+        <foreach collection="datas" item="history" separator=",">
+        (#{history.msh_ai_seq},#{history.msh_keyword},#{history.msh_search_time})        
+        </foreach>
+    </insert>
+    
+</mapper>

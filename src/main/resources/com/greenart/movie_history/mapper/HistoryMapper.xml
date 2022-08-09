@@ -1,0 +1,174 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.greenart.movie_history.mapper.HistoryMapper">
+
+
+
+    <select id="selectMovieAgeCntInfo" resultType="com.greenart.movie_history.data.MovieAgeCntVO">
+        select d.mi_title, d.mi_country, d.mi_year, e.genre_name, c.age, c.cnt
+        from movie_info d 
+        inner join (
+            select a.mlh_mi_seq, 
+                    <!-- floor((year(now())-year(ai_birth))/10)*10 as age, -->
+                    floor((extract(year from now())-extract(year from b.ai_birth))/10) * 10 as age,
+                    count(*) as cnt
+            from movie_lookup_history a
+                inner join account_info b 
+                on a.mlh_ai_seq = b.ai_seq
+            where mlh_lookup_time 
+            <if test="start_dt==null or end_dt==null">
+                <!-- between concat(date(date_sub(now(), interval 1 day)),' 00:00:00') and concat(date(date_sub(now(), interval 1 day)),' 23:59:59') -->
+                between to_timestamp(date(now() - interval '1 day') || ' 00:00:00' , 'YYYY-MM-DD HH24:MI:SS')
+                and to_timestamp(date(now() - interval '1 day') || ' 23:59:59' , 'YYYY-MM-DD HH24:MI:SS')
+            </if>
+            <if test="start_dt!=null and end_dt!=null">
+                <!-- between '${start_dt} 00:00:00' and '${end_dt} 23:59:59'  -->
+                between to_timestamp(${start_dt} || ' 00:00:00' , 'YYYY-MM-DD HH24:MI:SS')
+                and to_timestamp( ${end_dt} || ' 23:59:59' , 'YYYY-MM-DD HH24:MI:SS')                
+            </if>
+            group by mlh_mi_seq, age
+            order by mlh_mi_seq, age
+        ) c 
+        on d.mi_seq = c.mlh_mi_seq
+        inner join genre_info e
+        on d.mi_genre_seq =e.genre_seq
+    </select>
+
+    <select id="selectMovieAgeCntInfo2" resultType="com.greenart.movie_history.data.MovieAgeCntVO">
+        select d.mi_title, e.genre_name, c.age, c.cnt
+        from movie_info d 
+        inner join (
+            select a.mlh_mi_seq, 
+                    <!-- floor((year(now())-year(ai_birth))/10)*10 as age,  -->
+                    floor((extract(year from now())-extract(year from b.ai_birth))/10) * 10 as age,
+                    count(*) as cnt
+            from movie_lookup_history a
+                inner join account_info b 
+                on a.mlh_ai_seq = b.ai_seq
+            where DATE(mlh_lookup_time)
+                <if test="start_dt==null or end_dt==null">
+                    = date(now())
+                </if>
+                <if test="start_dt!=null and end_dt==null">
+                    = '${start_dt}'
+                </if>
+                <if test="start_dt!=null and end_dt!=null">
+                    between '${start_dt}' 
+                    and '${end_dt}'
+                </if>
+            group by mlh_mi_seq, age
+            order by mlh_mi_seq, age
+        ) c 
+        on d.mi_seq = c.mlh_mi_seq
+        inner join genre_info e 
+        on d.mi_genre_seq =e.genre_seq;
+
+        SELECT DATE(mlh_lookup_time) 
+        FROM movie_lookup_history mlh 
+    </select>
+
+    <select id="selectSearchKeywordRank" resultType="java.lang.String">
+        SELECT msh_keyword 
+        FROM (
+            SELECT msh_keyword, count(*) AS cnt 
+            FROM movie_search_history
+            WHERE msh_search_time
+                <if test="start_dt==null or end_dt==null">
+                    <!-- BETWEEN '2022-07-01 00:00:00' AND now() -->
+                    BETWEEN '2022-07-01 00:00:00' AND now()
+                </if>
+                <if test="start_dt!=null and end_dt!=null">
+                    <!-- BETWEEN concat(#{start_dt},' 00:00:00')
+                    AND concat(#{end_dt},' 23:59:59') -->
+                    between to_timestamp(${start_dt} || ' 00:00:00' , 'YYYY-MM-DD HH24:MI:SS')
+                    and to_timestamp( ${end_dt} || ' 23:59:59' , 'YYYY-MM-DD HH24:MI:SS')             
+                </if>
+                GROUP BY msh_keyword
+                ORDER BY cnt desc
+        ) a
+    </select>
+    <select id="selectMovie" resultType="com.greenart.movie_history.data.MovieVO">
+        SELECT mi_seq AS seq, mi_title AS title
+        FROM movie_info
+        <!-- WHERE mi_title LIKE CONCAT('%',#{keyword},'%') -->
+        WHERE mi_title LIKE ('%'||#{keyword}||'%')
+        ORDER BY mi_seq desc
+        LIMIT 1
+    </select>
+    
+    <select id="selectMemberSearchKeywordRank" resultType="java.lang.String">
+        SELECT msh_keyword
+        FROM (
+            SELECT msh_ai_seq, msh_keyword, count(*) as cnt
+            FROM movie_search_history
+            GROUP BY msh_ai_seq, msh_keyword
+            HAVING msh_ai_seq = #{seq}
+            ORDER BY msh_ai_seq, cnt desc
+        ) a
+    </select>
+    <select id="selectMovieGenreSeq" resultType="java.lang.Integer">
+        SELECT mi_genre_seq 
+        FROM movie_info
+        <!-- WHERE mi_title LIKE CONCAT('%',#{keyword},'%') -->
+        WHERE mi_title LIKE ('%'||#{keyword}||'%')
+        LIMIT 1
+    </select>
+    <select id="selectMovieInfos" resultType="com.greenart.movie_history.data.MovieInfoVO">
+        SELECT *, (
+            SELECT mimg_file_name 
+            FROM movie_image
+            WHERE mimg_mi_seq = mi_seq 
+                AND mimg_is_poster=1
+            ORDER BY mimg_seq desc
+            LIMIT 1
+        ) AS img
+        FROM movie_info a
+        INNER JOIN genre_info b
+            ON a.mi_genre_seq = b.genre_seq
+        WHERE mi_genre_seq = #{genre_seq}
+        ORDER BY mi_opening_dt desc
+        LIMIT 5
+    </select>
+
+
+
+    <select id="testCode1" resultType="com.greenart.movie_history.data.testVO">
+        SELECT genre_seq, SUM(cnt) as cnt
+        FROM (
+            SELECT msh_keyword as keyword, cnt, (
+                SELECT mi_genre_seq 
+                FROM movie_info
+                <!-- WHERE mi_title LIKE CONCAT('%',msh_keyword,'%') -->
+                WHERE mi_title LIKE ('%'||#{keyword}||'%')
+                ) as genre_seq
+            FROM (
+                SELECT msh_ai_seq, msh_keyword, count(*) as cnt
+                FROM movie_search_history
+                GROUP BY msh_ai_seq, msh_keyword
+                HAVING msh_ai_seq = #{user_seq}
+                ORDER BY msh_ai_seq, cnt desc
+            ) a
+        )b
+        GROUP BY genre_seq
+        ORDER BY cnt desc
+        LIMIT 5
+    </select>
+
+    <select id="selectLiveLookupDatas" resultType="com.greenart.movie_history.data.LiveLookupDataVO">
+        SELECT b.ai_id AS id, b.ai_gen AS gen,
+                EXTRACT(year from now()) -EXTRACT(year from b.ai_birth) AS age,
+                c.mi_title AS title, d.genre_name AS genre,
+                c.mi_year AS movie_year, c.mi_country AS movie_country
+        FROM movie_lookup_history a
+        LEFT OUTER JOIN account_info b
+            ON a.mlh_ai_seq = b.ai_seq
+        LEFT OUTER JOIN movie_info c
+            ON a.mlh_mi_seq = c.mi_seq
+        LEFT OUTER JOIN genre_info d 
+            ON c.mi_genre_seq = d.genre_seq
+        WHERE a.mlh_lookup_time >= now() - interval '10 second'
+    </select>
+
+
+
+</mapper>
