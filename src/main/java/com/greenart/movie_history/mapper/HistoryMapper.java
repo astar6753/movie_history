@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.greenart.movie_history.data.LiveLookupDataVO;
+import com.greenart.movie_history.data.LiveSearchDataVO;
 import com.greenart.movie_history.data.MovieAgeCntVO;
 import com.greenart.movie_history.data.MovieInfoVO;
 import com.greenart.movie_history.data.MovieVO;
@@ -22,4 +23,7 @@ public interface HistoryMapper {
     public List<LiveLookupDataVO> selectLiveLookupDatas();
 
     public List<testVO> testCode1(Integer user_seq);
+
+    public List<LiveSearchDataVO> selectLiveSearchDatasA();
+    public List<LiveSearchDataVO> selectLiveSearchDatasB();
 }

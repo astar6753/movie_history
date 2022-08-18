@@ -20,9 +20,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.greenart.movie_history.api.HistoryAPIContoroller;
 import com.greenart.movie_history.data.LiveLookupDataVO;
+import com.greenart.movie_history.data.LiveSearchDataVO;
 import com.greenart.movie_history.data.MovieAgeCntVO;
 import com.greenart.movie_history.data.MovieLookupHistoryVO;
+import com.greenart.movie_history.data.MovieSearchHistoryVO;
 import com.greenart.movie_history.mapper.DataGeneratorMapper;
 import com.greenart.movie_history.mapper.HistoryMapper;
 
@@ -127,6 +130,77 @@ public class HistoryScheduleComponent {
             bw.newLine();
         }
         bw.close();
+    }
 
+    @Scheduled(cron="*/5 * * * * *") 
+    public void makeSearchHistorySchedule() {
+        List<Integer> accountList = generate_mapper.selectAccountSeqList();
+        List<String> keywords = new ArrayList<String>();
+        List<String> movieNames = generate_mapper.selectMovieNames();
+
+        for(String s : movieNames){
+            String[] split = s.replaceAll(":", " ").replaceAll("[0-9]", "").split(" ");
+            for(String word : split){
+                if(!word.trim().equals(""))
+                keywords.add(word);
+            }
+        }
+        Integer cnt  = (int)(Math.random()*70+20);
+
+        List<MovieSearchHistoryVO> historyList = new ArrayList<MovieSearchHistoryVO>();
+        for(int i=0; i<cnt; i++){
+            MovieSearchHistoryVO data = new MovieSearchHistoryVO();
+            data.setMsh_ai_seq(accountList.get((int)(Math.random()*accountList.size())));
+            data.setMsh_keyword(keywords.get((int)(Math.random()*keywords.size())));
+            data.setMsh_search_time(new Date());
+            // System.out.println(data);
+            historyList.add(data);
+        }
+        System.out.println("Generated "+cnt+" random search history");
+        generate_mapper.insertSearchHistoryDatas(historyList);
+    }
+
+    @Scheduled(cron="*/5 * * * * *")
+    public void exportLiveSearchDataA() throws Exception {
+        List<LiveSearchDataVO> list = history_mapper.selectLiveSearchDatasA();
+        File liveLogFile = new File("/home/movie/live_data/SearchLiveDataA.log");
+        if(!liveLogFile.exists()){
+            liveLogFile.createNewFile();
+        }
+        BufferedWriter bw = new BufferedWriter(
+            new OutputStreamWriter(
+                new FileOutputStream(liveLogFile, true), encoding
+            )
+        );
+        for(LiveSearchDataVO data : list) {
+            // System.out.println(data.toString());
+            bw.write(data.toString());
+            bw.newLine();
+            
+        }
+        bw.close();
+        
+    }
+    
+    @Scheduled(cron="*/5 * * * * *")
+    public void exportLiveSearchDataB() throws Exception {
+        List<LiveSearchDataVO> list = history_mapper.selectLiveSearchDatasA();
+        File liveLogFile = new File("/home/movie/live_data/SearchLiveDataB.log");
+        if(!liveLogFile.exists()){
+            liveLogFile.createNewFile();
+        }
+        BufferedWriter bw = new BufferedWriter(
+            new OutputStreamWriter(
+                new FileOutputStream(liveLogFile, true), encoding
+            )
+        );
+        for(LiveSearchDataVO data : list) {
+            // System.out.println(data.toString());
+            bw.write(data.toString());
+            bw.newLine();
+            
+        }
+        bw.close();
+        
     }
 }

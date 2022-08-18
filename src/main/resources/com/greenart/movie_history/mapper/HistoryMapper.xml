@@ -5,7 +5,7 @@
 
 
     <select id="selectMovieAgeCntInfo" resultType="com.greenart.movie_history.data.MovieAgeCntVO">
-        select d.mi_title, d.mi_country, d.mi_year, e.genre_name, c.age, c.cnt
+        SELECT d.mi_title, d.mi_country, d.mi_year, e.genre_name, c.age, c.cnt
         from movie_info d 
         inner join (
             select a.mlh_mi_seq, 
@@ -15,7 +15,7 @@
             from movie_lookup_history a
                 inner join account_info b 
                 on a.mlh_ai_seq = b.ai_seq
-            where mlh_lookup_time 
+            WHERE mlh_lookup_time 
             <if test="start_dt==null or end_dt==null">
                 <!-- between concat(date(date_sub(now(), interval 1 day)),' 00:00:00') and concat(date(date_sub(now(), interval 1 day)),' 23:59:59') -->
                 between to_timestamp(date(now() - interval '1 day') || ' 00:00:00' , 'YYYY-MM-DD HH24:MI:SS')
@@ -170,5 +170,32 @@
     </select>
 
 
+    <select id="selectLiveSearchDatasA" resultType="com.greenart.movie_history.data.LiveSearchDataVO">
+        SELECT msh.msh_keyword AS keyword,
+                msh.msh_search_time AS search_time,
+                ai.ai_id  AS id,
+                EXTRACT(year FROM now()) -EXTRACT(year FROM ai.ai_birth) AS age,
+                ai.ai_gen AS gen
+        FROM movie_search_history msh 
+        INNER JOIN account_info ai
+            ON msh.msh_ai_seq = ai.ai_seq 
+        WHERE EXTRACT(year FROM now()) -EXTRACT(year FROM ai.ai_birth) >= 10
+            AND msh.msh_search_time >=now() - interval  '6 second'
+    </select>
+    <select id="selectLiveSearchDatasB" resultType="com.greenart.movie_history.data.LiveSearchDataVO">
+        SELECT * FROM 
+            (       
+            SELECT msh.msh_keyword AS keyword,
+                    msh.msh_search_time AS search_time,
+                    ai.ai_id  AS id,
+                    EXTRACT(year FROM now()) -EXTRACT(year FROM ai.ai_birth) AS age,
+                    ai.ai_gen AS gen
+            FROM movie_search_history msh 
+            INNER JOIN account_info ai
+                ON msh.msh_ai_seq = ai.ai_seq 
+            )c
+        WHERE c.age >= 10
+            AND search_time >=now() -interval  '6 second'
+    </select>
 
 </mapper>
