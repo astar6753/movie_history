@@ -3,7 +3,6 @@ package com.greenart.movie_history.component;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.greenart.movie_history.api.HistoryAPIContoroller;
 import com.greenart.movie_history.data.LiveLookupDataVO;
 import com.greenart.movie_history.data.LiveSearchDataVO;
 import com.greenart.movie_history.data.MovieAgeCntVO;
